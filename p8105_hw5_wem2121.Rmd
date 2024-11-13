@@ -174,30 +174,58 @@ Creating a `city_state` variable.
 ```{r}
 homicide = 
   homicide |> 
-  mutate(city_state = paste0(city, ", ", state))
+  mutate(city_state = paste0(city, ", ", state)) |> 
+  mutate(
+    unsolved = disposition %in% c(
+      'Closed without arrest',
+      'Open/No arrest'))
 ```
 
 ```{r}
-total_hom = 
-  homicide |> 
+homicide |> 
   group_by(city_state) |> 
   summarize(
     total = n(),
+    unsolved = sum(unsolved)
     ) |> 
-  mutate(disposition = 'Total')
+  knitr::kable()
+ 
+```
 
 
-category_hom = homicide |> 
-  group_by(city_state, disposition) |> 
-  summarize(
-    total = n(),
-    )
 
+Testing baltimore
+```{r}
+baltimore = 
+  homicide |> 
+  filter(city_state == 'Baltimore, MD')
 
-rbind(total_hom, category_hom) |> 
-  pivot_wider(
-    names_from= disposition,
-    values_from = total
-  ) |> knitr::kable()
+baltimore_unsolved = 
+  baltimore |> 
+  pull(unsolved) |> 
+  sum() |> 
+  prop.test(n = nrow(baltimore))  
+  
+
+# printing 
+baltimore_unsolved |> 
+  broom::tidy() |> 
+  select(estimate, conf.low, conf.high)
+```
+Running prop.test for each city
+```{r}
+homicide |> 
+  nest(data = -city_state) |> 
+  mutate(prop_test = map(data, 
+                        \(x) x |> 
+                          pull(unsolved)|> 
+                          sum() |> 
+                          prop.test(n = nrow(x))),
+         test_results = map(prop_test, \(x) broom::tidy(x)),
+         ) |> 
+  unnest(cols = test_results)
+```
+```{r}
+
 ```
 
