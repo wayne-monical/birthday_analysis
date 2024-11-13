@@ -47,19 +47,28 @@ Conducting the simulation
 ```{r}
 for(i in n_groups){
   for(j in 1:n_sim){
-    sims[as.character(i),j] = birthday(n = i)
+    sims[as.character(i),j] = as.integer(birthday(n = i))
   }
 }
 ```
 
 
 ```{r}
-sims_tbl = tibble(sims)
+sim_results = data.frame(
+  group_size = group_size,
+  prop_shared_bday = rowMeans(sims)
+)
 ```
 
+
 ```{r}
-head(sims_tbl)
+ggplot(
+  sim_results, 
+  aes(x = group_size, y = prop_shared_bday))+
+  geom_point()
+
 ```
+
 
 
 
