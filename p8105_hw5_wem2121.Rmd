@@ -1,0 +1,67 @@
+---
+title: "HW 5"
+author: "Wayne Monical"
+date: "2024-11-13"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+## Problem 1
+
+Creating the birthday function. 
+```{r}
+n_test = 25
+
+birthday = function(n = 25){
+  birthdays = sample(x = 1:365, 
+                     size = n,
+                     replace = TRUE)
+  return(length(unique(birthdays)) < n)
+}
+
+birthday(1)
+
+birthday(366)
+```
+
+Running the simulation 10000 for each size between 2 and 50
+```{r}
+group_size = 2:50
+n_sim = 10000
+
+sims = 
+    matrix(
+      0,
+      nrow = max(group_size) - min(group_size) + 1,
+      ncol = n_sim,
+      dimnames = list(group_size, NULL))
+
+# sims = tibble::rowid_to_column(sims, "group_size")
+
+```
+
+Conducting the simulation
+```{r}
+for(i in n_groups){
+  for(j in 1:n_sim){
+    sims[as.character(i),j] = birthday(n = i)
+  }
+}
+```
+
+
+```{r}
+sims_tbl = tibble(sims)
+```
+
+```{r}
+head(sims_tbl)
+```
+
+
+
+
+
