@@ -159,3 +159,45 @@ sim3b =
 sim3b
 ```
 
+
+## Problem 3
+
+This data set contains 52,179 victims of homicide across 50 US cities. There is data on the victims' names, ages, races, and sexes. There is a latitude and longitude given for each homicide and a variable titled `disposition` indicating the result of the homicide's investigation. 
+
+read in homicide data
+```{r}
+homicide = read_csv('homicide-data.csv')
+```
+
+
+Creating a `city_state` variable. 
+```{r}
+homicide = 
+  homicide |> 
+  mutate(city_state = paste0(city, ", ", state))
+```
+
+```{r}
+total_hom = 
+  homicide |> 
+  group_by(city_state) |> 
+  summarize(
+    total = n(),
+    ) |> 
+  mutate(disposition = 'Total')
+
+
+category_hom = homicide |> 
+  group_by(city_state, disposition) |> 
+  summarize(
+    total = n(),
+    )
+
+
+rbind(total_hom, category_hom) |> 
+  pivot_wider(
+    names_from= disposition,
+    values_from = total
+  ) |> knitr::kable()
+```
+
