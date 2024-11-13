@@ -214,7 +214,8 @@ baltimore_unsolved |>
 ```
 Running prop.test for each city
 ```{r}
-homicide |> 
+unsolved_props=
+  homicide |> 
   nest(data = -city_state) |> 
   mutate(prop_test = map(data, 
                         \(x) x |> 
@@ -223,9 +224,20 @@ homicide |>
                           prop.test(n = nrow(x))),
          test_results = map(prop_test, \(x) broom::tidy(x)),
          ) |> 
-  unnest(cols = test_results)
+  unnest(cols = test_results) |> 
+  select(
+    city_state, estimate, conf.low, conf.high
+  ) |> 
+  
 ```
 ```{r}
-
+unsolved_props |> 
+  ggplot(aes(
+    x = reorder(city_state, estimate),
+    y = estimate))  +  
+  geom_point() + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high))+
+  theme(axis.text.x = element_text(angle = 90))+
+  
 ```
 
