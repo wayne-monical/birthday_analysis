@@ -7,7 +7,7 @@ output: github_document
 
 ```{r}
 library(tidyverse)
-set.seed(1)
+set.seed(123)
 
 ```
 
@@ -49,7 +49,7 @@ sims =
 
 Conducting the simulation
 ```{r}
-for(i in n_groups){
+for(i in group_size){
   for(j in 1:n_sim){
     sims[as.character(i),j] = as.integer(birthday(n = i))
   }
@@ -76,87 +76,123 @@ ggplot(
 
 
 
+
+
+
 ## Problem 2
 
 Simulating a normal distribution 5000 times. 
 ```{r}
-n_3 = 30
-sd_3 = 5
-mu_3 = 0
+n_2 = 30
+sd_2 = 5
+mu_2 = 0
+
+sim_size = 5000
+```
+
+
+
+Conducting simulation
+```{r}
+n_2 = 30
+sd_2 = 5
+mu_2 = 0
 
 sim_size = 5000
 
-sims = matrix(
-  rnorm(
-    n = sim_size * n_3,
-    mean = mu_3,
-    sd = sd_3),
-  nrow = sim_size
-) 
+sim2a = 
+  tibble(
+    id = 1:sim_size,
+    mu = mu_2
+    ) |> 
+  mutate(
+    sim = map(mu, \(x) rnorm(n = n_2, mean = x, sd = sd_2))
+  )
 ```
 
 Saving the sample average and applying a t-test.
 ```{r}
-sim_mean = rowMeans(sims)
-
-sim_test = 
-  apply(
-    sims, 
-    MARGIN = 1,
-    FUN = \(x) broom::tidy(
-        t.test(x = x,
-               alternative = "two.sided",
-               mu = 0,
-               conf.level = 0.95)))
-```
-
-```{r}
-sim_results = 
-  sim_test |> 
-  lapply(FUN = \(x) select(x, 'estimate', 'p.value')) |> 
-  rbind()
-```
-
-
-```{r}
-sim_results
-```
-
-Repeating with mus from 1 to 5
-```{r}
-n_3 = 30
-sd_3 = 5
-mu_3 = 0
-
-sim_size = 5000
-
-sim3b = tibble(mu = 0:5)
-
-sim3b = 
-  sim3b |> 
-  mutate(sims = map(mu, \(x) rnorm(n = n_3,
-                                   mean = x,
-                                   sd = sd_3)))
-```
-
-Conducting t_tests
-```{r}
-sim3b = 
-  sim3b |> 
+sim2a = 
+  sim2a |> 
   mutate(
-    test = map(sims, \(x) broom::tidy(
-      t.test(x = x,
-             alternative = 'two.sided',
-             mu = 0, 
-             conf.level = 0.95)))
+    test = map(
+      sim,
+      \(x) broom::tidy(
+        t.test(
+          x = x,
+          alternative = 'two.sided',
+          mu = 0,
+          conf.leve = 0.95
+        )))) |> 
+  unnest(test)
+```
+
+Repeating for mu equal to 1 through 5.
+```{r}
+mu = data.frame(mu = 0:5)
+sim_id = data.frame(id = 1:sim_size)
+
+sim2b = 
+  crossing(mu, sim_id) |> 
+  mutate(
+    sim = map(mu, \(x) rnorm(n = n_2, mean = x, sd = sd_2)),
+    test = map(
+      sim,
+      \(x) broom::tidy(
+        t.test(
+          x = x,
+          alternative = 'two.sided',
+          mu = 0,
+          conf.level = 0.95
+        )))
   ) |> 
-  mutate(
-    estimate
-  )
+  unnest(test) |> 
+  mutate(reject_null = p.value < 0.05)
+```
+
+Plotting the power of the test.
+
+```{r}
+sim2b |> 
+  group_by(mu) |> 
+  summarize(
+    proportion_reject_null = mean(reject_null, na.rm = TRUE)
+    ) |> 
+  ggplot(aes(x = as.character(mu), y = proportion_reject_null)) +
+  geom_point()
+```
+
+
+
+```{r}
+null_reject_ests = 
+  sim2b |> 
+  filter(reject_null) |> 
+  group_by(mu) |> 
+  summarize(mu_hat = mean(estimate))
+
+
+sim2b |> 
+  group_by(mu) |> 
+  summarize(mu_hat = mean(estimate)) |> 
+  ggplot(aes(x = as.character(mu), y = mu_hat)) +
+  geom_point() +
+  geom_point(data = null_reject_ests, aes(color = 'red'))
 ```
 
 ```{r}
-sim3b
+sim2b |> 
+  group_by(mu) |> 
+  summarize(
+    proportion_reject_null = mean(reject_null, na.rm = TRUE)
+    ) |> 
+  ggplot(aes(x = as.character(mu), y = mu_hat_rejected_null)) +
+  geom_point()
+```
+
+
+```{r}
+sim2b |> filter(p.value < 0.05)
 ```
 
 
