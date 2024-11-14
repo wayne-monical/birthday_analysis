@@ -8,14 +8,13 @@ output: github_document
 ```{r}
 library(tidyverse)
 set.seed(123)
-
 ```
 
 ## Problem 1
 
 In this problem, we create a function to simulate whether a group of a given size has at least one shared birthday, assuming birthdays are evenly spread among the 365 days of the year. We simulate this random drawing 10000 for each group size between 2 and 50. Plotting the results of the simulation, we see that the proportion of simulations with at least one shared birthday rises smoothly from close to zero to close to one with increasing group size. 
 
-Creating the birthday function. 
+First we create a function for simulating a shared birthday.
 ```{r}
 n_test = 25
 
@@ -25,13 +24,9 @@ birthday = function(n = 25){
                      replace = TRUE)
   return(length(unique(birthdays)) < n)
 }
-
-birthday(1)
-
-birthday(366)
 ```
 
-Running the simulation 10000 for each size between 2 and 50
+The, we run the simulation 10000 for each size between 2 and 50
 ```{r}
 group_size = 2:50
 n_sim = 10000
@@ -43,12 +38,6 @@ sims =
       ncol = n_sim,
       dimnames = list(group_size, NULL))
 
-# sims = tibble::rowid_to_column(sims, "group_size")
-
-```
-
-Conducting the simulation
-```{r}
 for(i in group_size){
   for(j in 1:n_sim){
     sims[as.character(i),j] = as.integer(birthday(n = i))
@@ -56,7 +45,7 @@ for(i in group_size){
 }
 ```
 
-Taking the average proportion of groups with at least one shared birthday for each group size. 
+We then take the average proportion of groups with at least one shared birthday for each group size. 
 ```{r}
 sim_results = data.frame(
   group_size = group_size,
@@ -64,12 +53,15 @@ sim_results = data.frame(
 )
 ```
 
-Plotting the results
+We plot the results and observe that the proportion of simulated groups with a shared birthday rises smoothly from close to zero to close to one with increasing group size.
 ```{r}
 ggplot(
   sim_results, 
   aes(x = group_size, y = prop_shared_bday))+
-  geom_point()
+  geom_point() + 
+  ggtitle('Proportion of Simulated Groups with Shared Birthday') +
+  xlab('Group Size') + 
+  ylab('Proportion')
 
 ```
 
@@ -81,7 +73,9 @@ ggplot(
 
 ## Problem 2
 
-Simulating a normal distribution 5000 times. 
+In this problem, we begin by simulating a normal distribution a large number of times with various true means. We then conduct t-tests as to whether the true mean of the simulated samples is different from zero. 
+
+We begin by specifying parameters for the simulation. 
 ```{r}
 n_2 = 30
 sd_2 = 5
@@ -91,8 +85,7 @@ sim_size = 5000
 ```
 
 
-
-Conducting simulation
+We then conduct the simulation.
 ```{r}
 n_2 = 30
 sd_2 = 5
@@ -110,7 +103,7 @@ sim2a =
   )
 ```
 
-Saving the sample average and applying a t-test.
+We find the sample average for each simulation and apply a t-test.
 ```{r}
 sim2a = 
   sim2a |> 
@@ -127,7 +120,7 @@ sim2a =
   unnest(test)
 ```
 
-Repeating for mu equal to 1 through 5.
+We repeat this process for various true means equal to 0 through 5.
 ```{r}
 mu = data.frame(mu = 0:5)
 sim_id = data.frame(id = 1:sim_size)
@@ -150,7 +143,8 @@ sim2b =
   mutate(reject_null = p.value < 0.05)
 ```
 
-Plotting the power of the test.
+
+Power is defined as the probability of a test successfully rejecting the null hypothesis. By taking the proportion of simulations that reject the null hypothesis for known true means, we can approximate the power of the test. Plotting this power estimation, we see that it increases as the difference between the true mean and the null hypothesis mean increases. The proportion of simulations that rejected the null hypothesis when the true mean was equal to zero is approximately 0.05, the alpha value of the specified t-test, also known as the type I error. 
 
 ```{r}
 sim2b |> 
@@ -159,10 +153,14 @@ sim2b |>
     proportion_reject_null = mean(reject_null, na.rm = TRUE)
     ) |> 
   ggplot(aes(x = as.character(mu), y = proportion_reject_null)) +
-  geom_point()
+  geom_point() + 
+  ggtitle('Proportion of Simulations Rejecting Null Hypothesis') +
+  xlab('True mu') + 
+  ylab('Proportion')
+  
 ```
 
-
+Plotting the average estimated mean from each simulation against their true means (the points given in black), we see that they align closely. Plotting the average estimated mean among simulations that rejected the null hypothesis (points given in red), we see a variety of effects. Where the true mean is zero, the average estimated mean is close to zero. This may be due to the facts that the true mean is indeed zero and the t-tests were conducted as two-sided, therefore there were approximately as many type I errors on both tails, and their average was approximately zero. Among simulated samples with true means equal to 1 and 2, the estimates of the mean are significant larger than the true means. Since the power of these tests were smaller, it took exceptionally large values in order to reject the null hypothesis. Among simulations with a true mean equal to 3, 4, and 5, the average estimate of the mean was approximately equal to the true mean. Since these tests had higher powers, most of the simulations succeeded in rejecting the null hypothesis, and therefore the means of these estimates aligned more closely with the true means. 
 
 ```{r}
 null_reject_ests = 
@@ -177,36 +175,26 @@ sim2b |>
   summarize(mu_hat = mean(estimate)) |> 
   ggplot(aes(x = as.character(mu), y = mu_hat)) +
   geom_point() +
-  geom_point(data = null_reject_ests, aes(color = 'red'))
+  geom_point(data = null_reject_ests, aes(color = 'red'))+
+  ggtitle("Mu Hat in Rejected t-test Simulations") + 
+  xlab("True mu") + 
+  ylab('Estimated mu') + 
+  theme(legend.position="none")
 ```
 
-```{r}
-sim2b |> 
-  group_by(mu) |> 
-  summarize(
-    proportion_reject_null = mean(reject_null, na.rm = TRUE)
-    ) |> 
-  ggplot(aes(x = as.character(mu), y = mu_hat_rejected_null)) +
-  geom_point()
-```
-
-
-```{r}
-sim2b |> filter(p.value < 0.05)
-```
 
 
 ## Problem 3
 
 This data set contains 52,179 victims of homicide across 50 US cities. There is data on the victims' names, ages, races, and sexes. There is a latitude and longitude given for each homicide and a variable titled `disposition` indicating the result of the homicide's investigation. 
 
-read in homicide data
+We begin by reading in the homicide data.
 ```{r}
 homicide = read_csv('homicide-data.csv')
 ```
 
 
-Creating a `city_state` variable. 
+We create the `city_state` variable. 
 ```{r}
 homicide = 
   homicide |> 
@@ -217,6 +205,8 @@ homicide =
       'Open/No arrest'))
 ```
 
+
+We count the total number of homicides and the number of unsolved homicides for each city. 
 ```{r}
 homicide |> 
   group_by(city_state) |> 
@@ -230,7 +220,7 @@ homicide |>
 
 
 
-Testing baltimore
+We estimate the proportion of unsolved homicides in  Baltimore, Maryland. 
 ```{r}
 baltimore = 
   homicide |> 
@@ -242,13 +232,18 @@ baltimore_unsolved =
   sum() |> 
   prop.test(n = nrow(baltimore))  
   
-
-# printing 
 baltimore_unsolved |> 
   broom::tidy() |> 
   select(estimate, conf.low, conf.high)
 ```
-Running prop.test for each city
+
+```{r}
+ homicide |> 
+  filter(city_state == 'Tulsa, AL')
+```
+
+
+We conduct the same procedure on all cities in the data setusiong a tidy pipeline. There is one city for which this statistical procedure is not valid, namely Tulsa, AL. This city has only one recorded homicide, which is solved. 
 ```{r}
 unsolved_props=
   homicide |> 
@@ -263,9 +258,11 @@ unsolved_props=
   unnest(cols = test_results) |> 
   select(
     city_state, estimate, conf.low, conf.high
-  ) |> 
+  )  
   
 ```
+
+We create a chart showing the estimate of unsolved homicides with error bars showing a 95% confidence interval. The cities are organize by the proportion of unsolved homicides. 
 ```{r}
 unsolved_props |> 
   ggplot(aes(
@@ -274,6 +271,9 @@ unsolved_props |>
   geom_point() + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high))+
   theme(axis.text.x = element_text(angle = 90))+
+  ggtitle("Proportion of Unsolved Homicides in US Cities") + 
+  xlab('City, State') + 
+  ylab('Proportion')
   
 ```
 
