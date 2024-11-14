@@ -120,9 +120,9 @@ sim2a =
   unnest(test)
 ```
 
-We repeat this process for various true means equal to 0 through 5.
+We repeat this process for various true means equal to 0 through 6.
 ```{r}
-mu = data.frame(mu = 0:5)
+mu = data.frame(mu = 0:6)
 sim_id = data.frame(id = 1:sim_size)
 
 sim2b = 
